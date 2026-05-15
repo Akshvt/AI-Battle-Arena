@@ -14,7 +14,7 @@ export const cohereModel = new ChatOpenAI({
     configuration: {
         baseURL: "https://openrouter.ai/api/v1",
         defaultHeaders: {
-            "HTTP-Referer": "https://ai-battle-arena.vercel.app", // Optional but good practice
+            "HTTP-Referer": "https://ai-battle-arena-silk.vercel.app", // Optional but good practice
             "X-Title": "AI Battle Arena",
         }
     }
