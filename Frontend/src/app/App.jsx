@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
 
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+
 // SVG components
 const LightningIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block text-[#c8f525]">
@@ -582,39 +584,59 @@ const ArenaPage = ({ onEnterArena }) => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputValue.trim()) return;
 
+    const promptText = inputValue;
+    const msgId = Date.now();
+    
     const newMsg = {
-      id: Date.now(),
-      prompt: inputValue,
+      id: msgId,
+      prompt: promptText,
       status: 'loading'
     };
 
     setMessages(prev => [...prev, newMsg]);
     setInputValue('');
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const response = await fetch(`${API_URL}/api/battle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ problem: promptText })
+      });
+
+      if (!response.ok) throw new Error('Battle failed');
+
+      const result = await response.json();
+      
       // Trigger flash effect
       setFlash(true);
       setTimeout(() => setFlash(false), 800);
 
       setMessages(prev => prev.map(msg => {
-        if (msg.id === newMsg.id) {
-          const winner = Math.random() > 0.5 ? 'A' : 'B';
+        if (msg.id === msgId) {
+          const winner = result.judge.solution_1_score >= result.judge.solution_2_score ? 'A' : 'B';
           return {
             ...msg,
             status: 'complete',
-            solutionA: "Here is a highly optimized approach using modern techniques. It minimizes state updates and ensures clean unmounting:\n\n```javascript\nuseEffect(() => {\n  const handler = () => { /* magic */ };\n  window.addEventListener('resize', handler);\n  return () => window.removeEventListener('resize', handler);\n}, []);\n```\n\nThis is generally the accepted best practice for this problem.",
-            solutionB: "While the standard approach works, if we consider performance in edge cases, a debounced approach is significantly better for this specific scenario:\n\n```javascript\nconst debouncedHandler = useDebounce(() => {\n  // Heavy layout calculation\n}, 150);\n```\n\nI recommend this over the naive approach.",
+            solutionA: result.solution_1,
+            solutionB: result.solution_2,
             winner: winner,
-            reasoning: `FIGHTER ${winner} takes the win. While both provided working solutions, Fighter ${winner}'s approach showed a deeper understanding of the performance implications in a React environment and provided a more robust implementation pattern.`
+            reasoning: `FIGHTER ${winner} takes the win. ${winner === 'A' ? result.judge.solution_1_reasoning : result.judge.solution_2_reasoning}`
           };
         }
         return msg;
       }));
-    }, 2500);
+    } catch (error) {
+      console.error('Error during battle:', error);
+      setMessages(prev => prev.map(msg => {
+        if (msg.id === msgId) {
+          return { ...msg, status: 'complete', solutionA: 'Error: Failed to fetch response from arena.', solutionB: 'Error: Failed to fetch response from arena.', reasoning: 'The battle was interrupted by a connection error.' };
+        }
+        return msg;
+      }));
+    }
   };
 
   const handleKeyDown = (e) => {
