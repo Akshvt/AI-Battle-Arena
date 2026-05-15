@@ -14,10 +14,10 @@ export const geminiModel = new ChatGoogle({
 
 export const cohereModel = new ChatCohere({
     apiKey: config.cohereApiKey,
-    model: 'command-r', // Highly capable, balanced fighter
+    model: 'command', // Most compatible model for Trial keys on Render
 });
 
 export const mistralModel = new ChatMistralAI({
     apiKey: config.mistralApiKey,
-    model: 'mistral-large-latest', // The heavyweight
+    model: 'mistral-small-latest', // Balanced to match Cohere Command's tier
 });
