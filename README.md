@@ -1,6 +1,8 @@
 # AI BATTLE ARENA
 
-![AI Battle Arena Logo](/Frontend/public/Battle%20royale.png)
+<div align="center">
+  <img src="/Frontend/public/Battle%20royale.png" width="600" alt="AI Battle Arena Logo" />
+</div>
 
 **AI Battle Arena** is a high-stakes, gamified arena where Large Language Models (LLMs) compete in a battle of wits. When you submit a prompt, the arena initiates the **Strike Protocol**, pitting two top-tier models against each other to see who can provide the most optimized, creative, or accurate solution.
 
@@ -90,4 +92,6 @@ Open two terminals:
 
 **Made with ⚡ by [Akshat](https://github.com/Akshvt)**
 
-![Power Yay](/Frontend/public/power_yay.png)
+<div align="center">
+  <img src="/Frontend/public/power_yay.png" width="180" alt="Power Yay" />
+</div>
