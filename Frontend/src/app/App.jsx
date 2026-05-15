@@ -404,7 +404,7 @@ const SolutionCard = ({ fighter, content, isWinner, delay }) => {
   const isA = fighter === 'A';
   const color = isA ? '#4a90d9' : '#d94a6e';
   const name = isA ? 'FIGHTER A' : 'FIGHTER B';
-  const modelName = isA ? 'MistralAI' : 'Cohere';
+  const modelName = isA ? 'MistralAI Medium' : 'MistralAI Small';
 
   return (
     <div
@@ -466,7 +466,7 @@ const JudgeCard = ({ winner, reasoning, delay }) => {
           <div className="badge-tag flex items-center gap-1">
             <GavelIcon /> JUDGE'S VERDICT
           </div>
-          <p className="font-inter text-xs text-white/50 mt-2">Gemini</p>
+          <p className="font-inter text-xs text-white/50 mt-2">Gemini 1.5 Flash</p>
         </div>
       </div>
 
