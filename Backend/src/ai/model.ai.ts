@@ -9,10 +9,14 @@ export const geminiModel = new ChatGoogle({
 });
 
 export const cohereModel = new ChatOpenAI({
-    model: "cohere/command-r-03-2025",
+    model: "cohere/command-r", // Updated OpenRouter slug
     apiKey: config.openRouterApiKey,
     configuration: {
         baseURL: "https://openrouter.ai/api/v1",
+        defaultHeaders: {
+            "HTTP-Referer": "https://ai-battle-arena.vercel.app", // Optional but good practice
+            "X-Title": "AI Battle Arena",
+        }
     }
 });
 
