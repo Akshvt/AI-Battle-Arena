@@ -1,78 +1,93 @@
 # ⚡ AI BATTLE ARENA
 
-**AI Battle Arena** is a high-fidelity, gamified playground where the world's most powerful AI models go head-to-head. Enter your prompt, initiate the **Strike Protocol**, and watch as multiple LLMs battle for supremacy, judged in real-time by a superior AI arbiter.
-
 ![AI Battle Arena Logo](/Frontend/public/Battle%20royale.png)
 
----
-
-## 🎮 The Experience
-
-- **Multi-Model Orchestration**: Leverages LangGraph to pit models like **Mistral**, **Cohere**, and **Gemini** against each other in a structured logic flow.
-- **Strike Protocol Interaction**: A custom-built "physics-engine" feel for the UI. Cards repel, vibrate, and emit speed lines when you initiate a battle.
-- **Dynamic AI Mascot**: An interactive companion that jumps and "poofs" away when you try to hover it—peek at him in the sidebar!
-- **High-Fidelity Aesthetics**: Neo-Brutalist design using high-contrast lime on dark grey, featuring glassmorphism, ink-splatter backgrounds, and spring-physics animations.
+**AI Battle Arena** is a high-stakes, gamified arena where Large Language Models (LLMs) compete in a battle of wits. When you submit a prompt, the arena initiates the **Strike Protocol**, pitting two top-tier models against each other to see who can provide the most optimized, creative, or accurate solution.
 
 ---
 
-## 🛠️ Technology Stack
+## ⚔️ The Fighters & The Judge
 
-### Frontend
-- **Framework**: React 19 + Vite
-- **Animations**: Framer Motion (Spring physics & complex sequences)
-- **Styling**: Tailwind CSS v4 (Using the new `@theme` engine)
-- **State Management**: React Hooks with custom persistence logic
+The arena uses a specialized orchestration engine to manage three distinct AI personalities:
 
-### Backend
-- **Runtime**: Node.js + TypeScript
-- **Framework**: Express
-- **AI Orchestration**: LangChain + LangGraph
-- **Models**: Gemini (Judge), MistralAI, Cohere
+- **Fighter A (MistralAI)**: Powered by `mistral-medium-latest`. Known for its concise and logical reasoning.
+- **Fighter B (Cohere)**: Powered by `command-r-03-2025`. Optimized for complex tasks and deep context understanding.
+- **The Judge (Google Gemini)**: Powered by `gemini-1.5-flash`. A neutral, superior arbiter that evaluates both solutions and declares a winner.
 
 ---
 
-## 🚀 Getting Started
+## 🧠 Why LangGraph?
 
-### Prerequisites
-- Node.js (v18+)
-- API Keys for Mistral, Cohere, and Google Generative AI (Gemini)
+We use **LangGraph** to manage the "Battle Logic" as a stateful, cyclical graph. Unlike simple linear chains, LangGraph allows us to define the battle as a series of coordinated steps (Nodes) that share and mutate a single **State Object**. This ensures that the Judge has full access to the prompt and both solutions before making a final decision.
 
-### Installation
+### The Battle Workflow (LangGraph Diagram)
 
-1. **Clone the Repo**:
-   ```bash
-   git clone https://github.com/Akshvt/AI-Battle-Arena.git
-   cd AI-Battle-Arena
-   ```
+```mermaid
+graph TD
+    START((START)) --> SolutionNode[Solution Node]
+    SolutionNode --> JudgeNode[Judge Node]
+    JudgeNode --> END((END))
 
-2. **Setup Backend**:
-   ```bash
-   cd Backend
-   npm install
-   # Create a .env file with your API keys (see DEPLOYMENT.md)
-   npm run dev
-   ```
+    subgraph "State Progression"
+    direction LR
+    S1[Initial State] --> S2[Generation State] --> S3[Evaluation State]
+    end
+```
 
-3. **Setup Frontend**:
-   ```bash
-   cd ../Frontend
-   npm install
-   npm run dev
-   ```
+### 📊 How the State Evolves
+1.  **START NODE**: The graph initializes with your problem.
+    *   *State:* `{ problem: "Write a React hook..." }`
+2.  **SOLUTION NODE**: Mistral and Cohere generate their responses in parallel.
+    *   *State:* `{ problem, solution_1: "...", solution_2: "..." }`
+3.  **JUDGE NODE**: Gemini analyzes both solutions, assigns scores (0-10), and provides reasoning.
+    *   *State:* `{ problem, solution_1, solution_2, judge: { solution_1_score, solution_2_score, reasoning } }`
+4.  **END NODE**: The final state is returned to the UI to trigger the victory animations.
 
 ---
 
-## 🌐 Deployment
+## 🛠️ Local Installation Guide
 
-The project is configured for split deployment:
-- **Backend**: Hosted on [Render](https://render.com) (TypeScript Build support).
-- **Frontend**: Hosted on [Vercel](https://vercel.com) (Vite preset).
+Want to run the arena on your own machine? Follow these steps:
 
-Check the [DEPLOYMENT.md](DEPLOYMENT.md) for full production setup instructions.
+### 1. Clone & Install
+```bash
+git clone https://github.com/Akshvt/AI-Battle-Arena.git
+cd AI-Battle-Arena
+
+# Install Backend
+cd Backend && npm install
+
+# Install Frontend
+cd ../Frontend && npm install
+```
+
+### 2. Environment Configuration
+Create a `.env` file inside the `Backend/` directory:
+
+```env
+# AI Models
+MISTRAL_API_KEY=your_mistral_key
+COHERE_API_KEY=your_cohere_key
+GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_key
+
+# Server
+PORT=3001
+NODE_ENV=development
+```
+
+### 3. Start the Engines
+Open two terminals:
+- **Terminal 1 (Backend):** `cd Backend && npm run dev`
+- **Terminal 2 (Frontend):** `cd Frontend && npm run dev`
 
 ---
 
-## 🛡️ License
-Distributed under the ISC License. See `LICENSE` for more information.
+## 🚀 Deployment
+- **Backend**: Deployed on **Render** (Root: `Backend`, Build: `npm install && npm run build`, Start: `npm start`).
+- **Frontend**: Deployed on **Vercel** (Root: `Frontend`, Output: `dist`).
 
-Created with ⚡ by [Akshat](https://github.com/Akshvt)
+---
+
+**Made with ⚡ by [Akshat](https://github.com/Akshvt)**
+
+![Power Yay](/Frontend/public/power_yay.png)
