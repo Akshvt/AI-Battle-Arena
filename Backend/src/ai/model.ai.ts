@@ -4,7 +4,7 @@ import config from "../config/config.js";
 
 export const geminiModel = new ChatGoogle({
     apiKey: config.googleApiKey,
-    model: 'gemini-1.5-flash',
+    model: 'gemini-1.5-flash-latest', // Using the latest alias for maximum compatibility
 });
 
 // Using Mistral API for both fighters to ensure 100% stability on Render
