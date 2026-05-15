@@ -1,6 +1,5 @@
 import { ChatGoogle } from "@langchain/google";
 import { ChatMistralAI } from "@langchain/mistralai";
-import { ChatOpenAI } from "@langchain/openai";
 import config from "../config/config.js";
 
 export const geminiModel = new ChatGoogle({
@@ -8,16 +7,10 @@ export const geminiModel = new ChatGoogle({
     model: 'gemini-1.5-flash',
 });
 
-export const cohereModel = new ChatOpenAI({
-    model: "mistralai/mistral-7b-instruct:free", // Most stable FREE model on OpenRouter
-    apiKey: config.openRouterApiKey,
-    configuration: {
-        baseURL: "https://openrouter.ai/api/v1",
-        defaultHeaders: {
-            "HTTP-Referer": "https://ai-battle-arena-silk.vercel.app",
-            "X-Title": "AI Battle Arena",
-        }
-    }
+// Using Mistral API for both fighters to ensure 100% stability on Render
+export const cohereModel = new ChatMistralAI({
+    apiKey: config.mistralApiKey,
+    model: 'mistral-small-latest', 
 });
 
 export const mistralModel = new ChatMistralAI({
