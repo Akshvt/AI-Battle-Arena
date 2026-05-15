@@ -12,9 +12,9 @@
 
 The arena uses a specialized orchestration engine to manage three distinct AI personalities:
 
-- **Fighter A (MistralAI)**: Powered by `mistral-medium-latest`. Known for its concise and logical reasoning.
-- **Fighter B (Cohere)**: Powered by `command-r-03-2025`. Optimized for complex tasks and deep context understanding.
-- **The Judge (Google Gemini)**: Powered by `gemini-1.5-flash`. A neutral, superior arbiter that evaluates both solutions and declares a winner.
+- **Fighter A (MistralAI)**: Powered by `mistral-medium-latest`. A highly efficient "Pro" model balanced for speed and logic.
+- **Fighter B (Meta / OpenRouter)**: Powered by `meta-llama/llama-3.1-8b-instruct:free`. Meta's state-of-the-art open-source model, accessed for free via OpenRouter.
+- **The Judge (Google Gemini)**: Powered by `gemini-1.5-flash`. A neutral, superior arbiter that evaluates both solutions with a 1-million-token context window.
 
 ---
 
