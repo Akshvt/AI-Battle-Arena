@@ -9,7 +9,7 @@ export const geminiModel = new ChatGoogle({
 });
 
 export const cohereModel = new ChatOpenAI({
-    model: "meta-llama/llama-3-70b-instruct", // The Open-Source King
+    model: "meta-llama/llama-3.1-8b-instruct:free", // Meta's newest FREE powerhouse
     apiKey: config.openRouterApiKey,
     configuration: {
         baseURL: "https://openrouter.ai/api/v1",
@@ -22,5 +22,5 @@ export const cohereModel = new ChatOpenAI({
 
 export const mistralModel = new ChatMistralAI({
     apiKey: config.mistralApiKey,
-    model: 'mistral-large-latest', // Europe's Heavyweight
+    model: 'mistral-medium-latest', // Quota-friendly "Pro" model
 });
