@@ -10,10 +10,10 @@ export const geminiModel = new ChatGoogle({
 
 export const cohereModel = new ChatCohere({
     apiKey: config.cohereApiKey,
-    model: 'command-r-03-2025',
+    model: 'command',
 });
 
 export const mistralModel = new ChatMistralAI({
     apiKey: config.mistralApiKey,
-    model: 'mistral-medium-latest',
+    model: 'mistral-large-latest',
 });
