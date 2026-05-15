@@ -1,4 +1,4 @@
-# ⚡ AI BATTLE ARENA
+# AI BATTLE ARENA
 
 ![AI Battle Arena Logo](/Frontend/public/Battle%20royale.png)
 
