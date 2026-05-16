@@ -13,8 +13,8 @@
 The arena uses a specialized orchestration engine to manage three distinct AI personalities:
 
 - **Fighter A (MistralAI)**: Powered by `mistral-medium-latest`. A highly efficient "Pro" model balanced for speed and logic.
-- **Fighter B (Meta / OpenRouter)**: Powered by `meta-llama/llama-3.1-8b-instruct:free`. Meta's state-of-the-art open-source model, accessed for free via OpenRouter.
-- **The Judge (Google Gemini)**: Powered by `gemini-1.5-flash`. A neutral, superior arbiter that evaluates both solutions with a 1-million-token context window.
+- **Fighter B (Google Gemini)**: Powered by `gemini-2.5-pro`. Google's massive 2-million context window model, perfectly matched against Mistral for speed and logic.
+- **The Judge (Meta / OpenRouter)**: Powered by `meta-llama/llama-3.3-70b-instruct:free`. A neutral, superior 70-billion parameter arbiter that evaluates both solutions entirely free from bias.
 
 ---
 
@@ -69,8 +69,8 @@ Create a `.env` file inside the `Backend/` directory:
 ```env
 # AI Models
 MISTRAL_API_KEY=your_mistral_key
-COHERE_API_KEY=your_cohere_key
-GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_key
+GOOGLE_API_KEY=your_gemini_key
+OPENROUTER_API_KEY=your_openrouter_key
 
 # Server
 PORT=3001
