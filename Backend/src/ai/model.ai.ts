@@ -26,18 +26,18 @@ export const openRouterPrimary = new ChatOpenAI({
         baseURL: 'https://openrouter.ai/api/v1',
     },
     temperature: 0.2,
-    maxTokens: 150,
+    maxTokens: 500,
     maxRetries: 1,
 });
 
 export const openRouterFallback = new ChatOpenAI({
     apiKey: config.openRouterApiKey,
-    model: 'nousresearch/hermes-3-llama-3.1-405b:free',
+    model: 'deepseek/deepseek-v4-flash:free',
     configuration: {
         baseURL: 'https://openrouter.ai/api/v1',
     },
     temperature: 0.2,
-    maxTokens: 150,
+    maxTokens: 500,
     maxRetries: 2,
 });
 

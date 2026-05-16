@@ -469,7 +469,7 @@ const JudgeCard = ({ winner, reasoning, delay }) => {
           <div className="badge-tag flex items-center gap-1">
             <GavelIcon /> JUDGE'S VERDICT
           </div>
-          <p className="font-inter text-xs text-white/50 mt-2">Llama 3.3 / Hermes 405B</p>
+          <p className="font-inter text-xs text-white/50 mt-2">Llama 3.3 / DeepSeek V4</p>
         </div>
       </div>
 
