@@ -13,7 +13,7 @@
 The arena uses a specialized orchestration engine to manage three distinct AI personalities:
 
 - **Fighter A (MistralAI)**: Powered by `mistral-medium-latest`. A highly efficient "Pro" model balanced for speed and logic.
-- **Fighter B (Google Gemini)**: Powered by `gemini-2.5-pro`. Google's massive 2-million context window model, perfectly matched against Mistral for speed and logic.
+- **Fighter B (Google Gemini)**: Powered by `gemini-3.1-flash`. Google's ultra-fast, 15 RPM free-tier model perfectly matched against Mistral for speed and logic.
 - **The Judge (Meta / OpenRouter)**: Powered by `meta-llama/llama-3.3-70b-instruct:free`. A neutral, superior 70-billion parameter arbiter that evaluates both solutions entirely free from bias.
 
 ---

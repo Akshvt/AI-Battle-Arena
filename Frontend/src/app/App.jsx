@@ -407,7 +407,7 @@ const SolutionCard = ({ fighter, content, isWinner, delay, stats }) => {
   const isA = fighter === 'A';
   const color = isA ? '#4a90d9' : '#d94a6e';
   const name = isA ? 'FIGHTER A' : 'FIGHTER B';
-  const modelName = isA ? 'MistralAI Medium' : 'Gemini 2.5 Pro';
+  const modelName = isA ? 'MistralAI Medium' : 'Gemini 3.1 Flash';
 
   return (
     <div
