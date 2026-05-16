@@ -53,7 +53,7 @@ const mistralPrimary = new ChatMistralAI({
 
 const mistralFallback = new ChatMistralAI({
     apiKey: config.mistralApiKey,
-    model: 'mistral-large-latest',
+    model: 'mistral-medium-3',
     maxRetries: 2,
 });
 
