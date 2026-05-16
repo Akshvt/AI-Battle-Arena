@@ -5,7 +5,7 @@ import config from "../config/config.js";
 
 export const geminiModel = new ChatGoogle({
     apiKey: config.googleApiKey,
-    model: 'gemini-1.5-pro-latest',
+    model: 'gemini-1.5-pro',
 });
 
 export const openRouterJudgeModel = new ChatOpenAI({
