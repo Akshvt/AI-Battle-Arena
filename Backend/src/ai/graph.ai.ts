@@ -1,6 +1,6 @@
 import { StateGraph, START, END, StateSchema, type GraphNode, type CompiledStateGraph } from "@langchain/langgraph";
 import z from "zod";
-import { mistralPrimary, mistralFallback, judgeModels, geminiPrimary, geminiFallback } from "./model.ai.js";
+import { mistralPrimary, mistralFallback, judgeModels, fighterBPrimary, fighterBFallback } from "./model.ai.js";
 import { createAgent, providerStrategy /*for gemini*/, toolStrategy /*for other models*/ } from "langchain";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
@@ -56,7 +56,7 @@ const solutionNode: GraphNode<typeof state> = async (state) => {
 
     const [mistralData, geminiData] = await Promise.all([
         invokeWithFallback(mistralPrimary, mistralFallback, 'Mistral Medium', 'Mistral Medium 3', messages),
-        invokeWithFallback(geminiPrimary, geminiFallback, 'Gemini 3 Flash', 'Gemini 2.5 Flash', messages),
+        invokeWithFallback(fighterBPrimary, fighterBFallback, 'Qwen3 Coder', 'DeepSeek V4 Flash', messages),
     ]);
 
     const getTokens = (res: any) => {
