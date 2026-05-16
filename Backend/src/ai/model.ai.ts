@@ -5,7 +5,7 @@ import config from "../config/config.js";
 
 export const geminiModel = new ChatGoogle({
     apiKey: config.googleApiKey,
-    model: 'gemini-3.1-flash',
+    model: 'gemini-3-flash-preview',
 });
 
 export const openRouterJudgeModel = new ChatOpenAI({
