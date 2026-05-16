@@ -4,7 +4,8 @@ import runGraph from './ai/graph.ai.js';
 
 const app = express();
 
-app.use(cors());
+app.use(cors({ origin: 'https://ai-battle-arena-silk.vercel.app' }));
+
 app.use(express.json());
 
 app.get('/health', (req, res) => {

@@ -1,6 +1,6 @@
 import { StateGraph, START, END, StateSchema, type GraphNode, type CompiledStateGraph } from "@langchain/langgraph";
 import z from "zod";
-import { mistralModel, cohereModel, geminiModel } from "./model.ai.js";
+import { mistralModel, deepseekModel, geminiModel } from "./model.ai.js";
 import { createAgent, providerStrategy /*for gemini*/, toolStrategy /*for other models*/ } from "langchain";
 import { HumanMessage } from "langchain";
 
@@ -25,14 +25,14 @@ const state = new StateSchema({
 
 const solutionNode: GraphNode<typeof state> = async (state) => {
 
-    const [mistralResponse, cohereResponse] = await Promise.all([
+    const [mistralResponse, geminiResponse] = await Promise.all([
         mistralModel.invoke(state.problem),
-        cohereModel.invoke(state.problem)
+        geminiModel.invoke(state.problem)
     ])
 
     return {
         solution_1: mistralResponse.text,
-        solution_2: cohereResponse.text,
+        solution_2: geminiResponse.text,
     }
 }
 
@@ -49,8 +49,8 @@ const judgeNode: GraphNode<typeof state> = async (state) => {
     */
 
     const judge = createAgent({
-        model: geminiModel,
-        responseFormat: providerStrategy(z.object({
+        model: deepseekModel,
+        responseFormat: toolStrategy(z.object({
             solution_1_score: z.number().int().min(0).max(10),
             solution_2_score: z.number().int().min(0).max(10),
             solution_1_reasoning: z.string(),

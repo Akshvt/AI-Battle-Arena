@@ -1,16 +1,22 @@
 import { ChatGoogle } from "@langchain/google";
 import { ChatMistralAI } from "@langchain/mistralai";
+import { ChatOpenAI } from "@langchain/openai"
 import config from "../config/config.js";
 
 export const geminiModel = new ChatGoogle({
     apiKey: config.googleApiKey,
-    model: 'gemini-1.5-flash-latest', // Using the latest alias for maximum compatibility
+    model: 'gemini-flash-latest', 
 });
 
-// Using Mistral API for both fighters to ensure 100% stability on Render
-export const cohereModel = new ChatMistralAI({
-    apiKey: config.mistralApiKey,
-    model: 'mistral-small-latest', 
+export const deepseekModel = new ChatOpenAI({
+    apiKey: process.env.DEEPSEEK_API_KEY,
+    model: 'deepseek-chat',
+    configuration: {
+        baseURL: 'https://api.deepseek.com/v1',
+    },
+    temperature: 0.2,
+    maxTokens:150,
+    maxRetries:2,
 });
 
 export const mistralModel = new ChatMistralAI({

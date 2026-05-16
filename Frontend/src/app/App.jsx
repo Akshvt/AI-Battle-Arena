@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 // SVG components
 const LightningIcon = () => (
@@ -404,7 +404,7 @@ const SolutionCard = ({ fighter, content, isWinner, delay }) => {
   const isA = fighter === 'A';
   const color = isA ? '#4a90d9' : '#d94a6e';
   const name = isA ? 'FIGHTER A' : 'FIGHTER B';
-  const modelName = isA ? 'MistralAI Medium' : 'MistralAI Small';
+  const modelName = isA ? 'MistralAI Medium' : 'Gemini Flash';
 
   return (
     <div
@@ -466,7 +466,7 @@ const JudgeCard = ({ winner, reasoning, delay }) => {
           <div className="badge-tag flex items-center gap-1">
             <GavelIcon /> JUDGE'S VERDICT
           </div>
-          <p className="font-inter text-xs text-white/50 mt-2">Gemini 1.5 Flash</p>
+          <p className="font-inter text-xs text-white/50 mt-2">DeepSeek Chat</p>
         </div>
       </div>
 
@@ -521,7 +521,7 @@ const MessageUnit = ({ message }) => {
           </div>
           <div className="w-1/2 h-full bg-[#d94a6e] flex flex-col items-center justify-center">
             <span className="font-bebas text-white tracking-widest text-lg leading-none">FIGHTER B</span>
-            <span className="font-inter text-[10px] text-white/60 leading-none mt-1">Cohere</span>
+            <span className="font-inter text-[10px] text-white/60 leading-none mt-1">Gemini</span>
           </div>
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px] bg-[#c8f525] rounded-full border-4 border-[#0d0d14] flex items-center justify-center z-10">
             <span className="font-bebas text-[#0d0d14] text-[22px] tracking-wider pt-1">VS</span>
@@ -553,7 +553,7 @@ const MessageUnit = ({ message }) => {
         </div>
         <div className="w-1/2 h-full bg-[#d94a6e] flex flex-col items-center justify-center">
           <span className="font-bebas text-white tracking-widest text-lg leading-none">FIGHTER B</span>
-          <span className="font-inter text-[10px] text-white/60 leading-none mt-1">Cohere</span>
+          <span className="font-inter text-[10px] text-white/60 leading-none mt-1">Gemini</span>
         </div>
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px] bg-[#c8f525] rounded-full border-4 border-[#0d0d14] flex items-center justify-center z-10">
           <span className="font-bebas text-[#0d0d14] text-[22px] tracking-wider pt-1">VS</span>
