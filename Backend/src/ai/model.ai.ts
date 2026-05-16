@@ -19,7 +19,7 @@ export const geminiModel = geminiPrimary.withFallbacks({
     fallbacks: [geminiFallback],
 });
 
-const openRouterPrimary = new ChatOpenAI({
+export const openRouterPrimary = new ChatOpenAI({
     apiKey: config.openRouterApiKey,
     model: 'meta-llama/llama-3.3-70b-instruct:free',
     configuration: {
@@ -30,7 +30,7 @@ const openRouterPrimary = new ChatOpenAI({
     maxRetries: 1,
 });
 
-const openRouterFallback = new ChatOpenAI({
+export const openRouterFallback = new ChatOpenAI({
     apiKey: config.openRouterApiKey,
     model: 'nousresearch/hermes-3-llama-3.1-405b:free',
     configuration: {
@@ -39,10 +39,6 @@ const openRouterFallback = new ChatOpenAI({
     temperature: 0.2,
     maxTokens: 150,
     maxRetries: 2,
-});
-
-export const openRouterJudgeModel = openRouterPrimary.withFallbacks({
-    fallbacks: [openRouterFallback],
 });
 
 const mistralPrimary = new ChatMistralAI({

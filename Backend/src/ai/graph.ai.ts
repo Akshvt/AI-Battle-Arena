@@ -1,6 +1,6 @@
 import { StateGraph, START, END, StateSchema, type GraphNode, type CompiledStateGraph } from "@langchain/langgraph";
 import z from "zod";
-import { mistralModel, openRouterJudgeModel, geminiModel } from "./model.ai.js";
+import { mistralModel, openRouterPrimary, openRouterFallback, geminiModel } from "./model.ai.js";
 import { createAgent, providerStrategy /*for gemini*/, toolStrategy /*for other models*/ } from "langchain";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
@@ -67,15 +67,14 @@ const judgeNode: GraphNode<typeof state> = async (state) => {
      * }
     */
 
-    const judge = createAgent({
-        model: openRouterJudgeModel,
-        responseFormat: toolStrategy(z.object({
-            solution_1_score: z.number().int().min(0).max(10),
-            solution_2_score: z.number().int().min(0).max(10),
-            solution_1_reasoning: z.string(),
-            solution_2_reasoning: z.string(),
-        })),
-        systemPrompt: `You are an expert, impartial AI judge evaluating two solutions to a coding/logic problem. 
+    const judgeSchema = toolStrategy(z.object({
+        solution_1_score: z.number().int().min(0).max(10),
+        solution_2_score: z.number().int().min(0).max(10),
+        solution_1_reasoning: z.string(),
+        solution_2_reasoning: z.string(),
+    }));
+
+    const systemPrompt = `You are an expert, impartial AI judge evaluating two solutions to a coding/logic problem. 
 
 CRITICAL JUDGING CRITERIA:
 1. Correctness: Does the solution actually work and solve the problem accurately? (Most important)
@@ -86,19 +85,38 @@ CRITICAL JUDGING CRITERIA:
    - DO NOT judge based on Markdown formatting or aesthetic presentation.
    - Grade strictly on the raw technical merit and accuracy of the code/logic.
 
-Provide a score (0-10) and brief, technical reasoning.`
-    })
+Provide a score (0-10) and brief, technical reasoning.`;
 
-    const judgeResponse = await judge.invoke({
-        messages: [
-            new HumanMessage(`
+    const judgePrimary = createAgent({
+        model: openRouterPrimary,
+        responseFormat: judgeSchema,
+        systemPrompt: systemPrompt
+    });
+
+    const judgeFallback = createAgent({
+        model: openRouterFallback,
+        responseFormat: judgeSchema,
+        systemPrompt: systemPrompt
+    });
+
+    let judgeResponse;
+    const evaluationMessage = new HumanMessage(`
                 Problem: ${problem}
                 Solution 1: ${solution_1}
                 Solution 2: ${solution_2}
                 Please evaluate the solutions and provide scores and reasoning.
-                `)
-        ]
-    })
+                `);
+
+    try {
+        judgeResponse = await judgePrimary.invoke({
+            messages: [evaluationMessage]
+        });
+    } catch (error) {
+        console.warn("Primary judge model failed, switching to fallback:", error);
+        judgeResponse = await judgeFallback.invoke({
+            messages: [evaluationMessage]
+        });
+    }
 
     const { solution_1_score, solution_2_score, solution_1_reasoning, solution_2_reasoning } = judgeResponse.structuredResponse;
 
