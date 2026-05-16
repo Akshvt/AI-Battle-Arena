@@ -20,29 +20,22 @@ const geminiFallback = new ChatGoogle({
 
 export { geminiPrimary, geminiFallback };
 
-// --- OpenRouter Judge Models ---
-// DeepSeek is primary because Llama 3.3 free tier is constantly rate-limited/spend-limited on Venice
-export const openRouterPrimary = new ChatOpenAI({
+// --- OpenRouter Judge Models (all free, all support tool calling) ---
+// Multiple fallbacks because free tier models get rate-limited constantly
+const judgeConfig = {
     apiKey: config.openRouterApiKey,
-    model: 'deepseek/deepseek-v4-flash:free',
-    configuration: {
-        baseURL: 'https://openrouter.ai/api/v1',
-    },
+    configuration: { baseURL: 'https://openrouter.ai/api/v1' },
     temperature: 0.2,
     maxTokens: 500,
-    maxRetries: 1,
-});
+    maxRetries: 0, // fail fast, move to next model
+};
 
-export const openRouterFallback = new ChatOpenAI({
-    apiKey: config.openRouterApiKey,
-    model: 'meta-llama/llama-3.3-70b-instruct:free',
-    configuration: {
-        baseURL: 'https://openrouter.ai/api/v1',
-    },
-    temperature: 0.2,
-    maxTokens: 500,
-    maxRetries: 1,
-});
+export const judgeModels = [
+    { model: new ChatOpenAI({ ...judgeConfig, model: 'deepseek/deepseek-v4-flash:free' }), name: 'DeepSeek V4 Flash' },
+    { model: new ChatOpenAI({ ...judgeConfig, model: 'qwen/qwen3-next-80b-a3b-instruct:free' }), name: 'Qwen3 80B' },
+    { model: new ChatOpenAI({ ...judgeConfig, model: 'google/gemma-4-31b-it:free' }), name: 'Gemma 4 31B' },
+    { model: new ChatOpenAI({ ...judgeConfig, model: 'nvidia/nemotron-3-super-120b-a12b:free' }), name: 'Nemotron 120B' },
+];
 
 // --- Mistral Fighter Models ---
 const mistralPrimary = new ChatMistralAI({

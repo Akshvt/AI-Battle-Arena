@@ -1,6 +1,6 @@
 import { StateGraph, START, END, StateSchema, type GraphNode, type CompiledStateGraph } from "@langchain/langgraph";
 import z from "zod";
-import { mistralPrimary, mistralFallback, openRouterPrimary, openRouterFallback, geminiPrimary, geminiFallback } from "./model.ai.js";
+import { mistralPrimary, mistralFallback, judgeModels, geminiPrimary, geminiFallback } from "./model.ai.js";
 import { createAgent, providerStrategy /*for gemini*/, toolStrategy /*for other models*/ } from "langchain";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
@@ -111,20 +111,6 @@ CRITICAL JUDGING CRITERIA:
 
 Provide a score (0-10) and brief, technical reasoning.`;
 
-    const judgePrimary = createAgent({
-        model: openRouterPrimary,
-        responseFormat: judgeSchema,
-        systemPrompt: systemPrompt
-    });
-
-    const judgeFallback = createAgent({
-        model: openRouterFallback,
-        responseFormat: judgeSchema,
-        systemPrompt: systemPrompt
-    });
-
-    let judgeResponse;
-    let judgeModelName = '';
     const evaluationMessage = new HumanMessage(`
                 Problem: ${problem}
                 Solution 1: ${solution_1}
@@ -132,17 +118,32 @@ Provide a score (0-10) and brief, technical reasoning.`;
                 Please evaluate the solutions and provide scores and reasoning.
                 `);
 
-    try {
-        judgeResponse = await judgePrimary.invoke({
-            messages: [evaluationMessage]
-        });
-        judgeModelName = 'DeepSeek V4 Flash';
-    } catch (error) {
-        console.warn("Primary judge failed, switching to fallback:", (error as any)?.message || error);
-        judgeResponse = await judgeFallback.invoke({
-            messages: [evaluationMessage]
-        });
-        judgeModelName = 'Llama 3.3 70B';
+    // Try each judge model in order until one succeeds
+    let judgeResponse: any = null;
+    let judgeModelName = '';
+
+    for (const { model, name } of judgeModels) {
+        try {
+            const agent = createAgent({
+                model: model,
+                responseFormat: judgeSchema,
+                systemPrompt: systemPrompt
+            });
+
+            judgeResponse = await agent.invoke({
+                messages: [evaluationMessage]
+            });
+            judgeModelName = name;
+            console.log(`Judge succeeded: ${name}`);
+            break; // Success — stop trying
+        } catch (error) {
+            console.warn(`Judge ${name} failed:`, (error as any)?.message || error);
+            // Continue to next model
+        }
+    }
+
+    if (!judgeResponse) {
+        throw new Error('All judge models failed. Please try again later.');
     }
 
     const { solution_1_score, solution_2_score, solution_1_reasoning, solution_2_reasoning } = judgeResponse.structuredResponse;
