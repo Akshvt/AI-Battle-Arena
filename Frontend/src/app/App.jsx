@@ -403,11 +403,11 @@ const LandingPage = ({ onEnterArena }) => {
   );
 };
 
-const SolutionCard = ({ fighter, content, isWinner, delay, stats }) => {
+const SolutionCard = ({ fighter, content, isWinner, delay, stats, modelName }) => {
   const isA = fighter === 'A';
   const color = isA ? '#4a90d9' : '#d94a6e';
   const name = isA ? 'FIGHTER A' : 'FIGHTER B';
-  const modelName = isA ? 'MistralAI (Medium/Large)' : 'Google Gemini (Flash)';
+  const displayModel = modelName || (isA ? 'MistralAI' : 'Gemini');
 
   return (
     <div
@@ -424,7 +424,7 @@ const SolutionCard = ({ fighter, content, isWinner, delay, stats }) => {
 
       <div className="mb-4">
         <h3 className="font-bebas text-3xl tracking-wide text-white mb-1">{name}</h3>
-        <p className="font-inter text-xs text-white/50">{modelName}</p>
+        <p className="font-inter text-xs text-white/50">{displayModel}</p>
       </div>
 
       <div className="font-inter text-[15px] text-[#e4e4e7] leading-relaxed flex-1 markdown-body">
@@ -461,7 +461,7 @@ const LoadingCard = ({ fighter }) => {
   );
 };
 
-const JudgeCard = ({ winner, reasoning, delay }) => {
+const JudgeCard = ({ winner, reasoning, delay, judgeModel }) => {
   return (
     <div className="card-base w-full mt-6 animate-enter opacity-0" style={{ borderTop: '4px solid #c8f525', animationDelay: `${delay}ms` }}>
       <div className="flex justify-between items-start mb-6">
@@ -469,7 +469,7 @@ const JudgeCard = ({ winner, reasoning, delay }) => {
           <div className="badge-tag flex items-center gap-1">
             <GavelIcon /> JUDGE'S VERDICT
           </div>
-          <p className="font-inter text-xs text-white/50 mt-2">Llama 3.3 / DeepSeek V4</p>
+          <p className="font-inter text-xs text-white/50 mt-2">{judgeModel || 'AI Judge'}</p>
         </div>
       </div>
 
@@ -552,11 +552,11 @@ const MessageUnit = ({ message }) => {
       <div className="relative h-14 flex items-center mb-8 mt-10">
         <div className="w-1/2 h-full bg-[#4a90d9] flex flex-col items-center justify-center">
           <span className="font-bebas text-white tracking-widest text-lg leading-none">FIGHTER A</span>
-          <span className="font-inter text-[10px] text-white/60 leading-none mt-1">MistralAI</span>
+          <span className="font-inter text-[10px] text-white/60 leading-none mt-1">{message.modelA || 'MistralAI'}</span>
         </div>
         <div className="w-1/2 h-full bg-[#d94a6e] flex flex-col items-center justify-center">
           <span className="font-bebas text-white tracking-widest text-lg leading-none">FIGHTER B</span>
-          <span className="font-inter text-[10px] text-white/60 leading-none mt-1">Gemini</span>
+          <span className="font-inter text-[10px] text-white/60 leading-none mt-1">{message.modelB || 'Gemini'}</span>
         </div>
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px] bg-[#c8f525] rounded-full border-4 border-[#0d0d14] flex items-center justify-center z-10">
           <span className="font-bebas text-[#0d0d14] text-[22px] tracking-wider pt-1">VS</span>
@@ -564,11 +564,11 @@ const MessageUnit = ({ message }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-        <SolutionCard fighter="A" content={message.solutionA} isWinner={message.winner === 'A'} delay={0} stats={message.statsA} />
-        <SolutionCard fighter="B" content={message.solutionB} isWinner={message.winner === 'B'} delay={80} stats={message.statsB} />
+        <SolutionCard fighter="A" content={message.solutionA} isWinner={message.winner === 'A'} delay={0} stats={message.statsA} modelName={message.modelA} />
+        <SolutionCard fighter="B" content={message.solutionB} isWinner={message.winner === 'B'} delay={80} stats={message.statsB} modelName={message.modelB} />
       </div>
 
-      <JudgeCard winner={message.winner} reasoning={message.reasoning} delay={160} />
+      <JudgeCard winner={message.winner} reasoning={message.reasoning} delay={160} judgeModel={message.judgeModel} />
     </div>
   );
 };
@@ -627,6 +627,9 @@ const ArenaPage = ({ onEnterArena }) => {
             solutionB: result.solution_2,
             statsA: result.solution_1_stats,
             statsB: result.solution_2_stats,
+            modelA: result.solution_1_model || 'MistralAI',
+            modelB: result.solution_2_model || 'Gemini',
+            judgeModel: result.judge_model || 'AI Judge',
             winner: winner,
             reasoning: `FIGHTER ${winner} takes the win. ${winner === 'A' ? result.judge.solution_1_reasoning : result.judge.solution_2_reasoning}`
           };

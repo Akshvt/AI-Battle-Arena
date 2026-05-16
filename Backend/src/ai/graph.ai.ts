@@ -1,6 +1,6 @@
 import { StateGraph, START, END, StateSchema, type GraphNode, type CompiledStateGraph } from "@langchain/langgraph";
 import z from "zod";
-import { mistralModel, openRouterPrimary, openRouterFallback, geminiModel } from "./model.ai.js";
+import { mistralPrimary, mistralFallback, openRouterPrimary, openRouterFallback, geminiPrimary, geminiFallback } from "./model.ai.js";
 import { createAgent, providerStrategy /*for gemini*/, toolStrategy /*for other models*/ } from "langchain";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
@@ -13,8 +13,11 @@ const state = new StateSchema({
     problem: z.string().default(""),
     solution_1: z.string().default(""),
     solution_2: z.string().default(""),
+    solution_1_model: z.string().default(""),
+    solution_2_model: z.string().default(""),
     solution_1_stats: z.object({ time: z.number(), tokens: z.number() }).default({ time: 0, tokens: 0 }),
     solution_2_stats: z.object({ time: z.number(), tokens: z.number() }).default({ time: 0, tokens: 0 }),
+    judge_model: z.string().default(""),
     judge: z.object({
         solution_1_score: z.number().default(0),
         solution_2_score: z.number().default(0),
@@ -32,14 +35,33 @@ const fighterSystemPrompt = new SystemMessage(
     "4. Be absolutely as concise as possible."
 );
 
-const solutionNode: GraphNode<typeof state> = async (state) => {
-    const start1 = Date.now();
-    const mistralPromise = mistralModel.invoke([fighterSystemPrompt, new HumanMessage(state.problem)]).then(res => ({ res, time: Date.now() - start1 }));
-    
-    const start2 = Date.now();
-    const geminiPromise = geminiModel.invoke([fighterSystemPrompt, new HumanMessage(state.problem)]).then(res => ({ res, time: Date.now() - start2 }));
+// Helper: invoke a model with try/catch fallback, returns { res, time, modelName }
+async function invokeWithFallback(
+    primary: any,
+    fallback: any,
+    primaryName: string,
+    fallbackName: string,
+    messages: any[]
+) {
+    const start = Date.now();
+    try {
+        const res = await primary.invoke(messages);
+        return { res, time: Date.now() - start, modelName: primaryName };
+    } catch (error) {
+        console.warn(`${primaryName} failed, switching to ${fallbackName}:`, (error as any)?.message || error);
+        const fallbackStart = Date.now();
+        const res = await fallback.invoke(messages);
+        return { res, time: Date.now() - fallbackStart, modelName: fallbackName };
+    }
+}
 
-    const [mistralData, geminiData] = await Promise.all([mistralPromise, geminiPromise]);
+const solutionNode: GraphNode<typeof state> = async (state) => {
+    const messages = [fighterSystemPrompt, new HumanMessage(state.problem)];
+
+    const [mistralData, geminiData] = await Promise.all([
+        invokeWithFallback(mistralPrimary, mistralFallback, 'Mistral Medium', 'Mistral Medium 3', messages),
+        invokeWithFallback(geminiPrimary, geminiFallback, 'Gemini 3 Flash', 'Gemini 2.5 Flash', messages),
+    ]);
 
     const getTokens = (res: any) => {
         return res.usage_metadata?.total_tokens || 
@@ -50,6 +72,8 @@ const solutionNode: GraphNode<typeof state> = async (state) => {
     return {
         solution_1: mistralData.res.text,
         solution_2: geminiData.res.text,
+        solution_1_model: mistralData.modelName,
+        solution_2_model: geminiData.modelName,
         solution_1_stats: { time: mistralData.time / 1000, tokens: getTokens(mistralData.res) },
         solution_2_stats: { time: geminiData.time / 1000, tokens: getTokens(geminiData.res) },
     }
@@ -100,6 +124,7 @@ Provide a score (0-10) and brief, technical reasoning.`;
     });
 
     let judgeResponse;
+    let judgeModelName = '';
     const evaluationMessage = new HumanMessage(`
                 Problem: ${problem}
                 Solution 1: ${solution_1}
@@ -111,16 +136,19 @@ Provide a score (0-10) and brief, technical reasoning.`;
         judgeResponse = await judgePrimary.invoke({
             messages: [evaluationMessage]
         });
+        judgeModelName = 'DeepSeek V4 Flash';
     } catch (error) {
-        console.warn("Primary judge model failed, switching to fallback:", error);
+        console.warn("Primary judge failed, switching to fallback:", (error as any)?.message || error);
         judgeResponse = await judgeFallback.invoke({
             messages: [evaluationMessage]
         });
+        judgeModelName = 'Llama 3.3 70B';
     }
 
     const { solution_1_score, solution_2_score, solution_1_reasoning, solution_2_reasoning } = judgeResponse.structuredResponse;
 
     return {
+        judge_model: judgeModelName,
         judge: {
             solution_1_score,
             solution_2_score,
