@@ -7,14 +7,12 @@ import config from "../config/config.js";
 const geminiPrimary = new ChatGoogle({
     apiKey: config.googleApiKey,
     model: 'gemini-3-flash-preview',
-    maxOutputTokens: 300,
     maxRetries: 1,
 });
 
 const geminiFallback = new ChatGoogle({
     apiKey: config.googleApiKey,
     model: 'gemini-2.5-flash',
-    maxOutputTokens: 300,
     maxRetries: 2,
 });
 
@@ -41,14 +39,14 @@ export const judgeModels = [
 const mistralPrimary = new ChatMistralAI({
     apiKey: config.mistralApiKey,
     model: 'mistral-medium-latest',
-    maxTokens: 300,
+    maxTokens: 800,
     maxRetries: 1,
 });
 
 const mistralFallback = new ChatMistralAI({
     apiKey: config.mistralApiKey,
     model: 'mistral-medium-3',
-    maxTokens: 300,
+    maxTokens: 800,
     maxRetries: 2,
 });
 

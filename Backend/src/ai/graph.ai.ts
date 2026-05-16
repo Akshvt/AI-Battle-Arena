@@ -28,11 +28,7 @@ const state = new StateSchema({
 })
 
 const fighterSystemPrompt = new SystemMessage(
-    "You are an elite competitive programmer. You must follow these STRICT RULES:\n" +
-    "1. Output ONLY the raw optimized code to solve the problem.\n" +
-    "2. Below the code, provide ONLY the Time and Space complexity (Big-O).\n" +
-    "3. DO NOT output 'Recommendations', 'Summaries', 'Alternative approaches', or any conversational text.\n" +
-    "4. Be absolutely as concise as possible."
+    "Output only the optimized code and its Big-O complexity. Nothing else."
 );
 
 // Helper: invoke a model with try/catch fallback, returns { res, time, modelName }
