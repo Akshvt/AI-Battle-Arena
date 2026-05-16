@@ -407,7 +407,7 @@ const SolutionCard = ({ fighter, content, isWinner, delay, stats }) => {
   const isA = fighter === 'A';
   const color = isA ? '#4a90d9' : '#d94a6e';
   const name = isA ? 'FIGHTER A' : 'FIGHTER B';
-  const modelName = isA ? 'MistralAI Medium' : 'Gemini 3 Flash Preview';
+  const modelName = isA ? 'MistralAI (Medium/Large)' : 'Google Gemini (Flash)';
 
   return (
     <div
@@ -469,7 +469,7 @@ const JudgeCard = ({ winner, reasoning, delay }) => {
           <div className="badge-tag flex items-center gap-1">
             <GavelIcon /> JUDGE'S VERDICT
           </div>
-          <p className="font-inter text-xs text-white/50 mt-2">Llama 3.3 70B</p>
+          <p className="font-inter text-xs text-white/50 mt-2">Llama 3.3 / Hermes 405B</p>
         </div>
       </div>
 
