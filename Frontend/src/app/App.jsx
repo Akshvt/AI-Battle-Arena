@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/atom-one-dark.css';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -400,11 +403,11 @@ const LandingPage = ({ onEnterArena }) => {
   );
 };
 
-const SolutionCard = ({ fighter, content, isWinner, delay }) => {
+const SolutionCard = ({ fighter, content, isWinner, delay, stats }) => {
   const isA = fighter === 'A';
   const color = isA ? '#4a90d9' : '#d94a6e';
   const name = isA ? 'FIGHTER A' : 'FIGHTER B';
-  const modelName = isA ? 'MistralAI Medium' : 'Gemini Flash';
+  const modelName = isA ? 'MistralAI Medium' : 'Gemini 1.5 Pro';
 
   return (
     <div
@@ -424,13 +427,13 @@ const SolutionCard = ({ fighter, content, isWinner, delay }) => {
         <p className="font-inter text-xs text-white/50">{modelName}</p>
       </div>
 
-      <div className="font-inter text-[15px] text-[#e4e4e7] leading-relaxed flex-1 whitespace-pre-wrap">
-        {content}
+      <div className="font-inter text-[15px] text-[#e4e4e7] leading-relaxed flex-1 markdown-body">
+        <ReactMarkdown rehypePlugins={[rehypeHighlight]}>{content}</ReactMarkdown>
       </div>
 
       <div className="mt-6 pt-4 border-t border-[#3a3a48] flex justify-between text-[#aaaabc] text-xs font-inter uppercase tracking-widest font-bold">
-        <span>Tokens: {Math.floor(Math.random() * 300) + 150}</span>
-        <span>Time: {(Math.random() * 2 + 1).toFixed(2)}s</span>
+        <span>Tokens: {stats?.tokens || Math.floor(Math.random() * 300) + 150}</span>
+        <span>Time: {stats?.time ? stats.time.toFixed(2) : (Math.random() * 2 + 1).toFixed(2)}s</span>
       </div>
     </div>
   );
@@ -466,12 +469,12 @@ const JudgeCard = ({ winner, reasoning, delay }) => {
           <div className="badge-tag flex items-center gap-1">
             <GavelIcon /> JUDGE'S VERDICT
           </div>
-          <p className="font-inter text-xs text-white/50 mt-2">DeepSeek Chat</p>
+          <p className="font-inter text-xs text-white/50 mt-2">Llama 3.3 70B</p>
         </div>
       </div>
 
-      <div className="font-inter text-[15px] text-[#e4e4e7] leading-relaxed mb-8 border-l-2 border-[#3a3a48] pl-4">
-        {reasoning}
+      <div className="font-inter text-[15px] text-[#e4e4e7] leading-relaxed mb-8 border-l-2 border-[#3a3a48] pl-4 markdown-body">
+        <ReactMarkdown rehypePlugins={[rehypeHighlight]}>{reasoning}</ReactMarkdown>
       </div>
 
       <div className="bg-[#0d0d14] border border-[#3a3a48] p-6 flex flex-col md:flex-row items-center gap-6 rounded-sm">
@@ -561,8 +564,8 @@ const MessageUnit = ({ message }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-        <SolutionCard fighter="A" content={message.solutionA} isWinner={message.winner === 'A'} delay={0} />
-        <SolutionCard fighter="B" content={message.solutionB} isWinner={message.winner === 'B'} delay={80} />
+        <SolutionCard fighter="A" content={message.solutionA} isWinner={message.winner === 'A'} delay={0} stats={message.statsA} />
+        <SolutionCard fighter="B" content={message.solutionB} isWinner={message.winner === 'B'} delay={80} stats={message.statsB} />
       </div>
 
       <JudgeCard winner={message.winner} reasoning={message.reasoning} delay={160} />
@@ -589,7 +592,7 @@ const ArenaPage = ({ onEnterArena }) => {
 
     const promptText = inputValue;
     const msgId = Date.now();
-    
+
     const newMsg = {
       id: msgId,
       prompt: promptText,
@@ -609,7 +612,7 @@ const ArenaPage = ({ onEnterArena }) => {
       if (!response.ok) throw new Error('Battle failed');
 
       const result = await response.json();
-      
+
       // Trigger flash effect
       setFlash(true);
       setTimeout(() => setFlash(false), 800);
@@ -622,6 +625,8 @@ const ArenaPage = ({ onEnterArena }) => {
             status: 'complete',
             solutionA: result.solution_1,
             solutionB: result.solution_2,
+            statsA: result.solution_1_stats,
+            statsB: result.solution_2_stats,
             winner: winner,
             reasoning: `FIGHTER ${winner} takes the win. ${winner === 'A' ? result.judge.solution_1_reasoning : result.judge.solution_2_reasoning}`
           };
