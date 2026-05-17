@@ -1,61 +1,97 @@
+import { ChatGoogle } from "@langchain/google";
 import { ChatMistralAI } from "@langchain/mistralai";
-import { ChatOpenAI } from "@langchain/openai"
+import { ChatOpenAI } from "@langchain/openai";
 import config from "../config/config.js";
 
-const openRouterConfig = {
+// ==========================================
+// FIGHTER A - Mistral Medium (Default)
+// ==========================================
+export const FIGHTER_A_NAME = 'Mistral Medium';
+export const fighterAModel = new ChatMistralAI({
+    model: "mistral-medium-latest",
+    apiKey: config.mistralApiKey,
+    temperature: 0.7,
+    maxTokens: 2000,
+});
+
+// ==========================================
+// FIGHTER B - CURRENTLY SELECTED
+// ==========================================
+export const FIGHTER_B_NAME = 'Mistral Large';
+export const fighterBModel = new ChatMistralAI({
+    model: "mistral-large-latest",
+    apiKey: config.mistralApiKey,
+    temperature: 0.7,
+    maxTokens: 2000,
+});
+
+/* 
+// OPTION: Gemini 2.5 Pro (via OpenRouter)
+export const FIGHTER_B_NAME = 'Gemini 2.5 Pro';
+export const fighterBModel = new ChatOpenAI({
     apiKey: config.openRouterApiKey,
+    model: 'google/gemini-2.5-pro',
+    temperature: 0.7,
+    maxTokens: 2000,
     configuration: { baseURL: 'https://openrouter.ai/api/v1' },
-};
-
-// --- Fighter B: OpenRouter Free Coding Models (replaces Gemini thinking models) ---
-const fighterBPrimary = new ChatOpenAI({
-    ...openRouterConfig,
-    model: 'qwen/qwen3-coder:free',
-    temperature: 0.2,
-    maxTokens: 800,
-    maxRetries: 1,
 });
+*/
 
-const fighterBFallback = new ChatOpenAI({
-    ...openRouterConfig,
-    model: 'deepseek/deepseek-v4-flash:free',
-    temperature: 0.2,
-    maxTokens: 800,
-    maxRetries: 2,
+/* 
+// OPTION: Llama 3.3 70B (via NVIDIA NIM)
+export const FIGHTER_B_NAME = 'Llama 3.3 70B';
+export const fighterBModel = new ChatOpenAI({
+    apiKey: config.nvidiaApiKey,
+    model: 'meta/llama-3.3-70b-instruct',
+    temperature: 0.7,
+    maxTokens: 2000,
+    configuration: { baseURL: 'https://integrate.api.nvidia.com/v1' },
 });
+*/
 
-export { fighterBPrimary, fighterBFallback };
+/* 
+// OPTION: Qwen3 Coder 480B (via NVIDIA NIM)
+export const FIGHTER_B_NAME = 'Qwen3 Coder 480B';
+export const fighterBModel = new ChatOpenAI({
+    apiKey: config.nvidiaApiKey,
+    model: 'qwen/qwen3-coder-480b-a35b-instruct',
+    temperature: 0.7,
+    maxTokens: 2000,
+    configuration: { baseURL: 'https://integrate.api.nvidia.com/v1' },
+});
+*/
 
-// --- OpenRouter Judge Models (all free, all support tool calling) ---
-// Multiple fallbacks because free tier models get rate-limited constantly
-const judgeConfig = {
-    ...openRouterConfig,
-    temperature: 0.2,
-    maxTokens: 500,
-    maxRetries: 0, // fail fast, move to next model
-};
 
-export const judgeModels = [
-    { model: new ChatOpenAI({ ...judgeConfig, model: 'deepseek/deepseek-v4-flash:free' }), name: 'DeepSeek V4 Flash' },
-    { model: new ChatOpenAI({ ...judgeConfig, model: 'qwen/qwen3-next-80b-a3b-instruct:free' }), name: 'Qwen3 80B' },
-    { model: new ChatOpenAI({ ...judgeConfig, model: 'google/gemma-4-31b-it:free' }), name: 'Gemma 4 31B' },
-    { model: new ChatOpenAI({ ...judgeConfig, model: 'nvidia/nemotron-3-super-120b-a12b:free' }), name: 'Nemotron 120B' },
-    { model: new ChatOpenAI({ ...judgeConfig, model: 'openai/gpt-oss-120b:free' }), name: 'GPT-OSS 120B' },
-];
-
-// --- Fighter A: Mistral Models ---
-const mistralPrimary = new ChatMistralAI({
+// ==========================================
+// JUDGE - CURRENTLY SELECTED
+// ==========================================
+export const JUDGE_NAME = 'Mistral Small';
+export const judgeModel = new ChatMistralAI({
     apiKey: config.mistralApiKey,
-    model: 'mistral-medium-latest',
-    maxTokens: 800,
-    maxRetries: 1,
+    model: 'mistral-small-latest',
+    temperature: 0,
+    maxTokens: 400,
 });
 
-const mistralFallback = new ChatMistralAI({
-    apiKey: config.mistralApiKey,
-    model: 'mistral-medium-3',
-    maxTokens: 800,
-    maxRetries: 2,
+/* 
+// OPTION: GPT-4o Mini (via OpenRouter)
+export const JUDGE_NAME = 'GPT-4o Mini';
+export const judgeModel = new ChatOpenAI({
+    apiKey: config.openRouterApiKey,
+    model: 'openai/gpt-4o-mini',
+    temperature: 0,
+    maxTokens: 400,
+    configuration: { baseURL: 'https://openrouter.ai/api/v1' },
 });
+*/
 
-export { mistralPrimary, mistralFallback };
+/* 
+// OPTION: Gemini 2.0 Flash (via Google API)
+export const JUDGE_NAME = 'Gemini 2.0 Flash';
+export const judgeModel = new ChatGoogle({
+    apiKey: config.googleApiKey,
+    model: 'gemini-2.0-flash',
+    temperature: 0,
+    maxOutputTokens: 400,
+});
+*/

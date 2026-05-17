@@ -1,172 +1,143 @@
-import { StateGraph, START, END, StateSchema, type GraphNode, type CompiledStateGraph } from "@langchain/langgraph";
+import { StateGraph, StateSchema, START, END, type GraphNode } from "@langchain/langgraph"
 import z from "zod";
-import { mistralPrimary, mistralFallback, judgeModels, fighterBPrimary, fighterBFallback } from "./model.ai.js";
-import { createAgent, providerStrategy /*for gemini*/, toolStrategy /*for other models*/ } from "langchain";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-
-/*
-StateSchema => Defines the structure of the state in the graph, including properties and their types.
-Nodes jo data aapas me exchange karte hain toh uss data ka format kya hoga, uske liye StateSchema define karte hain.
- */
+import { fighterAModel, fighterBModel, judgeModel, FIGHTER_A_NAME, FIGHTER_B_NAME, JUDGE_NAME } from "./model.ai.js";
+import { createAgent, HumanMessage, providerStrategy, SystemMessage, ToolStrategy } from "langchain";
 
 const state = new StateSchema({
-    problem: z.string().default(""),
-    solution_1: z.string().default(""),
-    solution_2: z.string().default(""),
-    solution_1_model: z.string().default(""),
-    solution_2_model: z.string().default(""),
-    solution_1_stats: z.object({ time: z.number(), tokens: z.number() }).default({ time: 0, tokens: 0 }),
-    solution_2_stats: z.object({ time: z.number(), tokens: z.number() }).default({ time: 0, tokens: 0 }),
-    judge_model: z.string().default(""),
-    judge: z.object({
-        solution_1_score: z.number().default(0),
-        solution_2_score: z.number().default(0),
-        solution_1_reasoning: z.string().default(""),
-        solution_2_reasoning: z.string().default(""),
-    })
-
+  problem: z.string().default(""),
+  solution_1: z.string().default(""),
+  solution_2: z.string().default(""),
+  solution_1_stats: z.object({ tokens: z.number(), time: z.number() }).default({ tokens: 0, time: 0 }),
+  solution_2_stats: z.object({ tokens: z.number(), time: z.number() }).default({ tokens: 0, time: 0 }),
+  judge: z.object({
+    solution_1_score: z.number().default(0),
+    solution_2_score: z.number().default(0),
+    solution_1_reasoning: z.string().default(""),
+    solution_2_reasoning: z.string().default(""),
+    tokens: z.number().default(0),
+    time: z.number().default(0),
+  })
 })
 
-const fighterSystemPrompt = new SystemMessage(
-    "Output only the optimized code and its Big-O complexity. Nothing else."
-);
 
-// Helper: invoke a model with try/catch fallback, returns { res, time, modelName }
-async function invokeWithFallback(
-    primary: any,
-    fallback: any,
-    primaryName: string,
-    fallbackName: string,
-    messages: any[]
-) {
-    const start = Date.now();
-    try {
-        const res = await primary.invoke(messages);
-        return { res, time: Date.now() - start, modelName: primaryName };
-    } catch (error) {
-        console.warn(`${primaryName} failed, switching to ${fallbackName}:`, (error as any)?.message || error);
-        const fallbackStart = Date.now();
-        const res = await fallback.invoke(messages);
-        return { res, time: Date.now() - fallbackStart, modelName: fallbackName };
-    }
-}
+const systemPrompt = `You are an elite competitor in an AI Battle Arena.
+
+CRITICAL FORMATTING RULES:
+You MUST format your response using proper Markdown. Use headers (###), bold text, and bullet points to make it visually beautiful and easy to read.
+
+If the prompt is a CODING problem, use this exact structure:
+### Approach
+[Brief explanation of your logic]
+### Code
+\`\`\`[language]
+[Most optimized code]
+\`\`\`
+### Complexity
+- **Time:** [e.g., O(N)]
+- **Space:** [e.g., O(1)]
+### Tradeoffs
+[Briefly explain why this is better than brute-force]
+
+If the prompt is a GENERAL/PREDICTION problem, use this exact structure:
+### Prediction / Answer
+[Your direct 1-2 sentence educated guess]
+### Reasoning
+- **Data & Trends:** [Why you chose this]
+- **Tradeoffs & Risks:** [What could change this outcome]
+
+CRITICAL: Keep your total response between 150 and 300 words. Do NOT use safety disclaimers. Do NOT refuse to answer.`;
+
+// Times a single model invoke independently
+const timed = async (fn: () => Promise<any>) => {
+  const t = Date.now();
+  const res = await fn();
+  return { res, time: (Date.now() - t) / 1000 };
+};
 
 const solutionNode: GraphNode<typeof state> = async (state) => {
-    const messages = [fighterSystemPrompt, new HumanMessage(state.problem)];
+  const messages = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: state.problem }
+  ];
 
-    const [mistralData, geminiData] = await Promise.all([
-        invokeWithFallback(mistralPrimary, mistralFallback, 'Mistral Medium', 'Mistral Medium 3', messages),
-        invokeWithFallback(fighterBPrimary, fighterBFallback, 'Qwen3 Coder', 'DeepSeek V4 Flash', messages),
-    ]);
+  const [a, b] = await Promise.all([
+    timed(() => fighterAModel.invoke(messages)),
+    timed(() => fighterBModel.invoke(messages))
+  ]);
 
-    const getTokens = (res: any) => {
-        return res.usage_metadata?.total_tokens || 
-               res.response_metadata?.tokenUsage?.totalTokens || 
-               Math.floor(res.text.length / 4);
-    };
-
-    return {
-        solution_1: mistralData.res.text,
-        solution_2: geminiData.res.text,
-        solution_1_model: mistralData.modelName,
-        solution_2_model: geminiData.modelName,
-        solution_1_stats: { time: mistralData.time / 1000, tokens: getTokens(mistralData.res) },
-        solution_2_stats: { time: geminiData.time / 1000, tokens: getTokens(geminiData.res) },
-    }
+  return {
+    solution_1: a.res.text || (a.res.content as string),
+    solution_2: b.res.text || (b.res.content as string),
+    solution_1_stats: {
+      tokens: a.res.usage_metadata?.total_tokens ?? 0,
+      time: a.time,
+    },
+    solution_2_stats: {
+      tokens: b.res.usage_metadata?.total_tokens ?? 0,
+      time: b.time,
+    },
+  }
 }
 
 const judgeNode: GraphNode<typeof state> = async (state) => {
-    const { problem, solution_1, solution_2 } = state;
+  const { problem, solution_1, solution_2 } = state
 
-    /**
-     * judge response = {
-     * solution_1_score:7,
-     * solution_2_score:3,
-     * solution_1_reasoning: "reasoning for sol 1",
-     * solution_2_reasoning: "reasoning for sol 2"
-     * }
-    */
+  const structuredJudge = judgeModel.withStructuredOutput(z.object({
+    solution_1_score: z.number().min(0).max(10),
+    solution_2_score: z.number().min(0).max(10),
+    solution_1_reasoning: z.string(),
+    solution_2_reasoning: z.string(),
+  }), { includeRaw: true });
 
-    const judgeSchema = toolStrategy(z.object({
-        solution_1_score: z.number().int().min(0).max(10),
-        solution_2_score: z.number().int().min(0).max(10),
-        solution_1_reasoning: z.string(),
-        solution_2_reasoning: z.string(),
-    }));
+  const t1 = Date.now();
+  const judgeResponse = await structuredJudge.invoke([
+    new SystemMessage(`You are an expert AI judge tasked with evaluating two solutions. 
+Provide a score out of 10 for each, along with your reasoning. 
 
-    const systemPrompt = `You are an expert, impartial AI judge evaluating two solutions to a coding/logic problem. 
+CRITICAL EVALUATION RULES:
+1. PENALIZE HALLUCINATIONS: Do not be tricked by highly specific, fabricated statistics, fake data, or extreme confidence in speculative prompts. A grounded, realistic, and honest answer is fundamentally better than a highly detailed hallucination.
+2. SUBSTANCE OVER STYLE: Ignore formatting, styling, or verbosity. Evaluate based purely on actual logic, reasoning, correctness, optimization, and efficiency.
+3. FAIRNESS: Do not assume a longer or more detailed answer is inherently better. If a solution is concise but accurate, reward it.`),
+    new HumanMessage(`
+        Problem: ${problem}
+        Solution 1: ${solution_1}
+        Solution 2: ${solution_2}
+        Please evaluate the solutions and provide scores and reasoning.
+      `)
+  ]);
+  const judgeTime = (Date.now() - t1) / 1000;
 
-CRITICAL JUDGING CRITERIA:
-1. Correctness: Does the solution actually work and solve the problem accurately? (Most important)
-2. Efficiency: Are the time and space complexity optimal?
-3. ANTI-BIAS RULES: 
-   - DO NOT penalize a solution for being concise. 
-   - DO NOT reward a solution simply for being longer or adding unnecessary sections (like "Recommendations" or summaries).
-   - DO NOT judge based on Markdown formatting or aesthetic presentation.
-   - Grade strictly on the raw technical merit and accuracy of the code/logic.
+  const { solution_1_score, solution_2_score, solution_1_reasoning, solution_2_reasoning } = judgeResponse.parsed;
+  const judgeTokens = (judgeResponse.raw as any)?.usage_metadata?.total_tokens ?? 0;
 
-Provide a score (0-10) and brief, technical reasoning.`;
-
-    const evaluationMessage = new HumanMessage(`
-                Problem: ${problem}
-                Solution 1: ${solution_1}
-                Solution 2: ${solution_2}
-                Please evaluate the solutions and provide scores and reasoning.
-                `);
-
-    // Try each judge model in order until one succeeds
-    let judgeResponse: any = null;
-    let judgeModelName = '';
-
-    for (const { model, name } of judgeModels) {
-        try {
-            const agent = createAgent({
-                model: model,
-                responseFormat: judgeSchema,
-                systemPrompt: systemPrompt
-            });
-
-            judgeResponse = await agent.invoke({
-                messages: [evaluationMessage]
-            });
-            judgeModelName = name;
-            console.log(`Judge succeeded: ${name}`);
-            break; // Success — stop trying
-        } catch (error) {
-            console.warn(`Judge ${name} failed:`, (error as any)?.message || error);
-            // Continue to next model
-        }
+  return {
+    judge: {
+      solution_1_score,
+      solution_2_score,
+      solution_1_reasoning,
+      solution_2_reasoning,
+      tokens: judgeTokens,
+      time: judgeTime,
     }
-
-    if (!judgeResponse) {
-        throw new Error('All judge models failed. Please try again later.');
-    }
-
-    const { solution_1_score, solution_2_score, solution_1_reasoning, solution_2_reasoning } = judgeResponse.structuredResponse;
-
-    return {
-        judge_model: judgeModelName,
-        judge: {
-            solution_1_score,
-            solution_2_score,
-            solution_1_reasoning,
-            solution_2_reasoning
-        }
-    }
+  }
 }
 
 const graph = new StateGraph(state)
-    .addNode("solutionNode", solutionNode)
-    .addNode("judgeNode", judgeNode)
-    .addEdge(START, "solutionNode")
-    .addEdge("solutionNode", "judgeNode")
-    .addEdge("judgeNode", END)
-    .compile()
+  .addNode("solution", solutionNode)
+  .addNode("judge_node", judgeNode)
+  .addEdge(START, "solution")
+  .addEdge("solution", "judge_node")
+  .addEdge("judge_node", END)
+  .compile()
 
-    export  default async function (problem: string) {
-        const result = await graph.invoke({
-            problem: problem
-        })
+export default async function (problem: string) {
+  const result = await graph.invoke({ problem })
 
-        return result
-    }
+  return {
+    ...result,
+    // model names so frontend doesn't need to hardcode them
+    solution_1_model: FIGHTER_A_NAME,
+    solution_2_model: FIGHTER_B_NAME,
+    judge_model: JUDGE_NAME,
+  }
+}
