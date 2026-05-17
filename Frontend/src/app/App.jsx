@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/atom-one-dark.css';
 import './App.css';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://ai-battle-arena-jajd.onrender.com';
 
 // SVG components
 const LightningIcon = () => (
@@ -407,7 +409,7 @@ const SolutionCard = ({ fighter, content, isWinner, delay, stats, modelName }) =
   const isA = fighter === 'A';
   const color = isA ? '#4a90d9' : '#d94a6e';
   const name = isA ? 'FIGHTER A' : 'FIGHTER B';
-  const displayModel = modelName || (isA ? 'MistralAI' : 'Gemini');
+  const displayModel = modelName || (isA ? 'Mistral Medium' : 'Gemini 2.5 Flash');
 
   return (
     <div
@@ -428,12 +430,12 @@ const SolutionCard = ({ fighter, content, isWinner, delay, stats, modelName }) =
       </div>
 
       <div className="font-inter text-[15px] text-[#e4e4e7] leading-relaxed flex-1 markdown-body">
-        <ReactMarkdown rehypePlugins={[rehypeHighlight]}>{content}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{content}</ReactMarkdown>
       </div>
 
       <div className="mt-6 pt-4 border-t border-[#3a3a48] flex justify-between text-[#aaaabc] text-xs font-inter uppercase tracking-widest font-bold">
-        <span>Tokens: {stats?.tokens || Math.floor(Math.random() * 300) + 150}</span>
-        <span>Time: {stats?.time ? stats.time.toFixed(2) : (Math.random() * 2 + 1).toFixed(2)}s</span>
+        <span>Tokens: {stats?.tokens ?? '—'}</span>
+        <span>Time: {stats?.time != null ? stats.time.toFixed(2) : '—'}s</span>
       </div>
     </div>
   );
@@ -461,7 +463,7 @@ const LoadingCard = ({ fighter }) => {
   );
 };
 
-const JudgeCard = ({ winner, reasoning, delay, judgeModel }) => {
+const JudgeCard = ({ winner, scoreA, scoreB, reasoningA, reasoningB, delay, judgeModel, judgeStats }) => {
   return (
     <div className="card-base w-full mt-6 animate-enter opacity-0" style={{ borderTop: '4px solid #c8f525', animationDelay: `${delay}ms` }}>
       <div className="flex justify-between items-start mb-6">
@@ -473,8 +475,32 @@ const JudgeCard = ({ winner, reasoning, delay, judgeModel }) => {
         </div>
       </div>
 
-      <div className="font-inter text-[15px] text-[#e4e4e7] leading-relaxed mb-8 border-l-2 border-[#3a3a48] pl-4 markdown-body">
-        <ReactMarkdown rehypePlugins={[rehypeHighlight]}>{reasoning}</ReactMarkdown>
+      {/* Score badges */}
+      <div className="flex gap-4 mb-6">
+        <div className="flex-1 bg-[#0d0d14] border border-[#4a90d9] rounded-sm p-3 text-center">
+          <div className="font-inter text-xs text-[#aaaabc] uppercase tracking-widest mb-1">Fighter A Score</div>
+          <div className="font-bebas text-3xl" style={{ color: '#4a90d9' }}>{scoreA}<span className="text-lg text-white/30">/10</span></div>
+        </div>
+        <div className="flex-1 bg-[#0d0d14] border border-[#d94a6e] rounded-sm p-3 text-center">
+          <div className="font-inter text-xs text-[#aaaabc] uppercase tracking-widest mb-1">Fighter B Score</div>
+          <div className="font-bebas text-3xl" style={{ color: '#d94a6e' }}>{scoreB}<span className="text-lg text-white/30">/10</span></div>
+        </div>
+      </div>
+
+      {/* Individual reasoning */}
+      <div className="space-y-4 mb-8">
+        <div className="border-l-2 border-[#4a90d9] pl-4">
+          <div className="font-inter text-xs font-bold text-[#4a90d9] uppercase tracking-widest mb-1">Fighter A</div>
+          <div className="font-inter text-[14px] text-[#e4e4e7] leading-relaxed markdown-body">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{reasoningA}</ReactMarkdown>
+          </div>
+        </div>
+        <div className="border-l-2 border-[#d94a6e] pl-4">
+          <div className="font-inter text-xs font-bold text-[#d94a6e] uppercase tracking-widest mb-1">Fighter B</div>
+          <div className="font-inter text-[14px] text-[#e4e4e7] leading-relaxed markdown-body">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{reasoningB}</ReactMarkdown>
+          </div>
+        </div>
       </div>
 
       <div className="bg-[#0d0d14] border border-[#3a3a48] p-6 flex flex-col md:flex-row items-center gap-6 rounded-sm">
@@ -489,15 +515,19 @@ const JudgeCard = ({ winner, reasoning, delay, judgeModel }) => {
         </div>
       </div>
 
+      {judgeStats && (
+        <div className="mt-4 pt-3 border-t border-[#3a3a48] flex justify-between text-[#aaaabc] text-xs font-inter uppercase tracking-widest font-bold">
+          <span>Tokens: {judgeStats.tokens}</span>
+          <span>Time: {judgeStats.time.toFixed(2)}s</span>
+        </div>
+      )}
+
       {/* Yay Mascot for winner */}
       <div className="absolute -top-16 -right-8 opacity-0 animate-[slideUpFade_0.5s_ease-out_forwards]" style={{ animationDelay: `${delay + 600}ms` }}>
         <motion.img
           src="/power_yay.png"
           className="w-32 h-32 object-contain drop-shadow-[0_0_15px_rgba(200,245,37,0.6)]"
-          animate={{
-            y: [0, -10, 0],
-            rotate: [-5, 5, -5]
-          }}
+          animate={{ y: [0, -10, 0], rotate: [-5, 5, -5] }}
           transition={{ duration: 2, repeat: Infinity }}
         />
       </div>
@@ -505,7 +535,7 @@ const JudgeCard = ({ winner, reasoning, delay, judgeModel }) => {
   );
 };
 
-const MessageUnit = ({ message }) => {
+const MessageUnit = ({ message, currentModels }) => {
   if (message.status === 'loading') {
     return (
       <div className="mb-12">
@@ -520,11 +550,11 @@ const MessageUnit = ({ message }) => {
         <div className="relative h-14 flex items-center mb-6 my-8">
           <div className="w-1/2 h-full bg-[#4a90d9] flex flex-col items-center justify-center">
             <span className="font-bebas text-white tracking-widest text-lg leading-none">FIGHTER A</span>
-            <span className="font-inter text-[10px] text-white/60 leading-none mt-1">MistralAI</span>
+            <span className="font-inter text-[10px] text-white/60 leading-none mt-1">{currentModels?.fighterA || 'Loading...'}</span>
           </div>
           <div className="w-1/2 h-full bg-[#d94a6e] flex flex-col items-center justify-center">
             <span className="font-bebas text-white tracking-widest text-lg leading-none">FIGHTER B</span>
-            <span className="font-inter text-[10px] text-white/60 leading-none mt-1">Gemini</span>
+            <span className="font-inter text-[10px] text-white/60 leading-none mt-1">{currentModels?.fighterB || 'Loading...'}</span>
           </div>
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px] bg-[#c8f525] rounded-full border-4 border-[#0d0d14] flex items-center justify-center z-10">
             <span className="font-bebas text-[#0d0d14] text-[22px] tracking-wider pt-1">VS</span>
@@ -552,11 +582,11 @@ const MessageUnit = ({ message }) => {
       <div className="relative h-14 flex items-center mb-8 mt-10">
         <div className="w-1/2 h-full bg-[#4a90d9] flex flex-col items-center justify-center">
           <span className="font-bebas text-white tracking-widest text-lg leading-none">FIGHTER A</span>
-          <span className="font-inter text-[10px] text-white/60 leading-none mt-1">{message.modelA || 'MistralAI'}</span>
+          <span className="font-inter text-[10px] text-white/60 leading-none mt-1">{message.modelA || 'Mistral Medium'}</span>
         </div>
         <div className="w-1/2 h-full bg-[#d94a6e] flex flex-col items-center justify-center">
           <span className="font-bebas text-white tracking-widest text-lg leading-none">FIGHTER B</span>
-          <span className="font-inter text-[10px] text-white/60 leading-none mt-1">{message.modelB || 'Gemini'}</span>
+          <span className="font-inter text-[10px] text-white/60 leading-none mt-1">{message.modelB || 'Gemini 2.5 Flash'}</span>
         </div>
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px] bg-[#c8f525] rounded-full border-4 border-[#0d0d14] flex items-center justify-center z-10">
           <span className="font-bebas text-[#0d0d14] text-[22px] tracking-wider pt-1">VS</span>
@@ -568,7 +598,7 @@ const MessageUnit = ({ message }) => {
         <SolutionCard fighter="B" content={message.solutionB} isWinner={message.winner === 'B'} delay={80} stats={message.statsB} modelName={message.modelB} />
       </div>
 
-      <JudgeCard winner={message.winner} reasoning={message.reasoning} delay={160} judgeModel={message.judgeModel} />
+      <JudgeCard winner={message.winner} scoreA={message.scoreA} scoreB={message.scoreB} reasoningA={message.reasoningA} reasoningB={message.reasoningB} delay={160} judgeModel={message.judgeModel} judgeStats={message.judgeStats} />
     </div>
   );
 };
@@ -577,6 +607,7 @@ const ArenaPage = ({ onEnterArena }) => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [flash, setFlash] = useState(false);
+  const [currentModels, setCurrentModels] = useState({ fighterA: '', fighterB: '', judge: '' });
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -586,6 +617,18 @@ const ArenaPage = ({ onEnterArena }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/api/models`, { withCredentials: true });
+        setCurrentModels(data);
+      } catch (error) {
+        console.error('Error fetching model names:', error);
+      }
+    };
+    fetchModels();
+  }, []);
 
   const handleSend = async () => {
     if (!inputValue.trim()) return;
@@ -603,15 +646,7 @@ const ArenaPage = ({ onEnterArena }) => {
     setInputValue('');
 
     try {
-      const response = await fetch(`${API_URL}/api/battle`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ problem: promptText })
-      });
-
-      if (!response.ok) throw new Error('Battle failed');
-
-      const result = await response.json();
+      const { data: result } = await axios.post(`${API_URL}/api/battle`, { problem: promptText }, { withCredentials: true });
 
       // Trigger flash effect
       setFlash(true);
@@ -627,11 +662,15 @@ const ArenaPage = ({ onEnterArena }) => {
             solutionB: result.solution_2,
             statsA: result.solution_1_stats,
             statsB: result.solution_2_stats,
-            modelA: result.solution_1_model || 'MistralAI',
-            modelB: result.solution_2_model || 'Gemini',
-            judgeModel: result.judge_model || 'AI Judge',
-            winner: winner,
-            reasoning: `FIGHTER ${winner} takes the win. ${winner === 'A' ? result.judge.solution_1_reasoning : result.judge.solution_2_reasoning}`
+            modelA: result.solution_1_model,
+            modelB: result.solution_2_model,
+            judgeModel: result.judge_model,
+            winner,
+            scoreA: result.judge.solution_1_score,
+            scoreB: result.judge.solution_2_score,
+            reasoningA: result.judge.solution_1_reasoning,
+            reasoningB: result.judge.solution_2_reasoning,
+            judgeStats: { tokens: result.judge.tokens, time: result.judge.time },
           };
         }
         return msg;
@@ -711,7 +750,7 @@ const ArenaPage = ({ onEnterArena }) => {
                   <p className="font-inter text-[#6a6a7a] max-w-md relative z-10">Enter a prompt below to summon the fighters.</p>
                 </div>
               ) : (
-                messages.map(msg => <MessageUnit key={msg.id} message={msg} />)
+                messages.map(msg => <MessageUnit key={msg.id} message={msg} currentModels={currentModels} />)
               )}
               <div ref={messagesEndRef} />
             </div>
